@@ -3,7 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title>Trang Thu Ngân</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+    function xuatLichSu() {
+      const noiDung = document.getElementById('lichSu').value;
+      const blob = new Blob([noiDung], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'lich_su_in.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
   <style>
     body { font-family: Arial; padding: 20px; }
     input, button, textarea, select { padding: 5px; margin: 5px; }
@@ -28,14 +41,13 @@
         <input list="danhSachKH" id="maKH" placeholder="(mục tìm kiếm)">
         <button onclick="tuDongDien()" class="btn" style="padding: 5px 10px; font-size: 14px;">🔍</button>
       </div>
-      <datalist id="danhSachKH"></datalist>
+      <datalist id="danhSachKH">
+        <!-- Tự động thêm từ file Excel -->
+      </datalist>
     </div>
     <div>
       <label>Tìm theo tên KH</label><br>
-      <div style="display: flex; align-items: center; gap: 4px;">
-        <input type="text" id="timTenKH" placeholder="Nhập tên KH">
-        <button onclick="timKiemTheoTen()" class="btn" style="padding: 5px 10px; font-size: 14px;">🔍</button>
-      </div>
+      <input type="text" id="timTenKH" placeholder="Nhập tên KH" oninput="timKiemTheoTen()">
     </div>
     <div>
       <label>Số tiền</label><br>
@@ -47,7 +59,9 @@
     </div>
   </div>
 
-  <div class="invoice-box" id="invoice"></div>
+  <div class="invoice-box" id="invoice">
+    <!-- hóa đơn sẽ hiện tại đây -->
+  </div>
 
   <button class="btn" onclick="inHoaDon()">In</button>
 
@@ -56,17 +70,14 @@
       <button class="btn" onclick="document.getElementById('excelUpload').click()">Đẩy dữ liệu</button>
       <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display:none" onchange="docExcel(this)">
     </div>
-    <div>
-      <label>Lịch sử in</label><br>
-      <textarea rows="5" cols="30" id="lichSu" readonly></textarea><br>
-      <button class="btn" onclick="xuatLichSu()">Xuất lịch sử</button>
+    <br><button class="btn" onclick="xuatLichSu()">Xuất lịch sử</button>
     </div>
   </div>
 
   <script>
     let duLieuKH = {};
 
-    function hienThiHoaDon() {
+    function inHoaDon() {
       const maKH = document.getElementById('maKH').value;
       const soTien = parseFloat(document.getElementById('soTien').value) || 0;
       const diaChi = document.getElementById('diaChi').value;
@@ -80,25 +91,17 @@
           <tr><td colspan="2">Điện Lực Kiến Xương</td></tr>
           <tr><td>Mã KH:</td><td>${maKH}</td></tr>
           <tr><td>Tên KH:</td><td>${diaChi}</td></tr>
-          <tr><td>Số tiền:</td><td>${soTien.toLocaleString()} ₫</td></tr>
-          <tr><td>Phí:</td><td>2.000 ₫</td></tr>
-          <tr><td>Tổng tiền:</td><td>${tong.toLocaleString()} ₫</td></tr>
+          <tr><td>số Tiền:</td><td>${soTien.toLocaleString()} ₫</td></tr>
+          <tr><td>phí:</td><td>2.000 ₫</td></tr>
+          <tr><td>tổng tiền:</td><td>${tong.toLocaleString()} ₫</td></tr>
           <tr><td colspan="2" class="center">ĐÃ THANH TOÁN</td></tr>
           <tr><td colspan="2" class="center">Ngày ${ngay.getDate()} tháng ${ngay.getMonth()+1} năm ${ngay.getFullYear()}</td></tr>
         </table>
       `;
+
       document.getElementById('invoice').innerHTML = hoaDonHTML;
-    }
 
-    function inHoaDon() {
-      hienThiHoaDon(); // hiển thị trước khi in
       const lichSu = document.getElementById('lichSu');
-      const maKH = document.getElementById('maKH').value;
-      const diaChi = document.getElementById('diaChi').value;
-      const soTien = parseFloat(document.getElementById('soTien').value) || 0;
-      const tong = soTien + 2000;
-      const ngay = new Date();
-
       const hoaDonText = `-----
 Mã KH: ${maKH}
 Tên KH: ${diaChi}
@@ -108,6 +111,7 @@ Tổng: ${tong.toLocaleString()} ₫
 Ngày: ${ngay.getDate()}/${ngay.getMonth()+1}/${ngay.getFullYear()}
 `;
       lichSu.value = hoaDonText + lichSu.value;
+
       window.print();
     }
 
@@ -118,6 +122,8 @@ Ngày: ${ngay.getDate()}/${ngay.getMonth()+1}/${ngay.getFullYear()}
         const workbook = XLSX.read(data, { type: 'array' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet);
+
+        // Lưu dữ liệu và cập nhật danh sách KH
         duLieuKH = {};
         const datalist = document.getElementById('danhSachKH');
         datalist.innerHTML = '';
@@ -141,7 +147,6 @@ Ngày: ${ngay.getDate()}/${ngay.getMonth()+1}/${ngay.getFullYear()}
         const tong = parseFloat((thongTin['TONG_NOP'] + '').replace(/[^\d,\.]/g, '').replace(',', '.')) || 0;
         document.getElementById('soTien').value = tong;
         document.getElementById('diaChi').value = thongTin['TEN_KHTT'] || '';
-        hienThiHoaDon();
       }
     }
 
@@ -157,26 +162,7 @@ Ngày: ${ngay.getDate()}/${ngay.getMonth()+1}/${ngay.getFullYear()}
         }
       }
     }
-
-    function xuatLichSu() {
-      const lichSuText = document.getElementById('lichSu').value.trim();
-      if (!lichSuText) return alert('Chưa có lịch sử để xuất.');
-      const records = lichSuText.split('-----').filter(r => r.trim());
-      const data = records.map(rec => {
-        const obj = {};
-        rec.split('\n').forEach(line => {
-          const [key, ...rest] = line.split(':');
-          if (key && rest.length) {
-            obj[key.trim()] = rest.join(':').trim();
-          }
-        });
-        return obj;
-      });
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'LichSuIn');
-      XLSX.writeFile(wb, 'lich_su_in.xlsx');
-    }
   </script>
+
 </body>
 </html>
