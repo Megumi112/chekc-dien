@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <title>Trang Thu Ngân</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     body { font-family: Arial; padding: 20px; }
     input, button, textarea, select { padding: 5px; margin: 5px; }
@@ -18,20 +19,10 @@
     .invoice-box table { width: 100%; border-collapse: collapse; }
     .invoice-box td { padding: 4px; }
     .invoice-box .center { text-align: center; font-weight: bold; }
-
     @media print {
-      body * {
-        visibility: hidden;
-      }
-      #invoice, #invoice * {
-        visibility: visible;
-      }
-      #invoice {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
+      body * { visibility: hidden; }
+      #invoice, #invoice * { visibility: visible; }
+      #invoice { position: absolute; left: 0; top: 0; width: 100%; }
     }
   </style>
 </head>
@@ -43,6 +34,7 @@
     <div style="display: flex; align-items: center; gap: 4px;">
       <input list="danhSachKH" id="maKH" placeholder="(mục tìm kiếm)">
       <button onclick="tuDongDien()" class="btn" style="padding: 5px 10px;">🔍</button>
+      <button onclick="batQuetQR()" class="btn" style="padding: 5px 10px;">📷</button>
     </div>
     <datalist id="danhSachKH"></datalist>
   </div>
@@ -63,10 +55,7 @@
   </div>
 </div>
 
-<div class="invoice-box" id="invoice">
-  <!-- Hóa đơn sẽ hiển thị tại đây -->
-</div>
-
+<div class="invoice-box" id="invoice"></div>
 <button class="btn" onclick="inHoaDon()">In</button>
 
 <div class="bottom-row">
@@ -80,6 +69,8 @@
     <button class="btn" onclick="xuatLichSu()">Xuất lịch sử</button>
   </div>
 </div>
+
+<div id="qr-reader" style="width: 300px; margin-top: 10px; display: none;"></div>
 
 <script>
   let duLieuKH = {};
@@ -102,30 +93,15 @@
         <tr><td>Phí:</td><td>2.000 ₫</td></tr>
         <tr><td>Tổng tiền:</td><td>${tong.toLocaleString()} ₫</td></tr>
         <tr><td colspan="2" class="center">ĐÃ THANH TOÁN</td></tr>
-        <tr><td colspan="2" class="center">Ngày ${ngay.getDate()} tháng ${ngay.getMonth()+1} năm ${ngay.getFullYear()}</td></tr>
+        <tr><td colspan="2" class="center">Ngày ${ngay.getDate()}/${ngay.getMonth()+1}/${ngay.getFullYear()}</td></tr>
       </table>
     `;
     document.getElementById('invoice').innerHTML = hoaDonHTML;
   }
 
   function inHoaDon() {
-    hienThiHoaDon(); // cập nhật trước khi in
-    const maKH = document.getElementById('maKH').value;
-    const diaChi = document.getElementById('diaChi').value;
-    const soTien = parseFloat(document.getElementById('soTien').value) || 0;
-    const tong = soTien + 2000;
-    const ngay = new Date();
-    const lichSu = document.getElementById('lichSu');
-    const hoaDonText = `-----
-Mã KH: ${maKH}
-Tên KH: ${diaChi}
-Số tiền: ${soTien.toLocaleString()} ₫
-Phí: 2.000 ₫
-Tổng: ${tong.toLocaleString()} ₫
-Ngày: ${ngay.getDate()}/${ngay.getMonth()+1}/${ngay.getFullYear()}
-`;
-    lichSu.value = hoaDonText + lichSu.value;
-    window.print();
+    hienThiHoaDon();
+    setTimeout(() => window.print(), 300);
   }
 
   function docExcel(input) {
@@ -193,6 +169,28 @@ Ngày: ${ngay.getDate()}/${ngay.getMonth()+1}/${ngay.getFullYear()}
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'LichSuIn');
     XLSX.writeFile(wb, 'lich_su_in.xlsx');
+  }
+
+  function batQuetQR() {
+    const qrRegion = document.getElementById("qr-reader");
+    qrRegion.style.display = "block";
+    const qr = new Html5Qrcode("qr-reader");
+    qr.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => {
+        document.getElementById("maKH").value = decodedText;
+        tuDongDien();
+        qr.stop();
+        qr.clear();
+        qrRegion.style.display = "none";
+      },
+      (errorMessage) => {
+        console.warn(errorMessage);
+      }
+    ).catch((err) => {
+      alert("Không thể bật camera: " + err);
+    });
   }
 </script>
 </body>
