@@ -1,197 +1,320 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Trang Thu Ngân</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Thu tiền điện</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    input, button, textarea, select { padding: 5px; margin: 5px; }
-    .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-    .invoice-box {
-      border: 1px solid #000; padding: 10px; min-height: 200px; width: 300px;
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f0f0f0;
+      max-width: 100vw;
+      min-height: 100vh;
+      padding: 0;
+      border-radius: 0;
+      font-size: 17px;
     }
-    .btn { padding: 10px 20px; cursor: pointer; }
-    .bottom-row { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
-    datalist option { padding: 5px; }
-    .invoice-box table { width: 100%; border-collapse: collapse; }
-    .invoice-box td { padding: 4px; }
-    .invoice-box .center { text-align: center; font-weight: bold; }
+    .container {
+      max-width: 430px;
+      margin: auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 16px #bbb8;
+      padding: 18px 6px 24px 6px;
+      min-height: 100vh;
+    }
+    input, button, textarea {
+      font-size: 17px;
+      margin: 7px 0;
+      padding: 10px 8px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+    input:focus, textarea:focus {
+      border: 1.5px solid #4387fd;
+      outline: none;
+    }
+    button {
+      background: #4387fd;
+      color: white;
+      border: none;
+      font-weight: bold;
+      margin-left: 5px;
+      margin-right: 0;
+      min-width: 46px;
+      min-height: 40px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #bbb4;
+    }
+    button:active { background: #3066b2; }
+    h2 { margin-bottom: 16px; text-align: center; }
+
+    .row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .label {
+      width: 120px;
+      min-width: 90px;
+      flex-shrink: 0;
+    }
+    #maKH, #tenKH, #soTien, #nguoiThuTien {
+      flex: 1;
+      min-width: 0;
+      background: #f8f8f8;
+    }
+
+    #hoaDon {
+      width: 100%;
+      min-height: 180px;
+      border: 2px solid black;
+      border-radius: 13px;
+      padding: 14px 7px;
+      white-space: pre-wrap;
+      font-size: 17px;
+      font-family: 'Times New Roman', serif;
+      margin-bottom: 12px;
+      background: #faf9f7;
+      box-shadow: 0 2px 8px #eee;
+    }
+    #hoaDon p { margin: 0; }
+
+    .action-btns {
+      display: flex;
+      gap: 10px;
+      flex-direction: row;
+      margin-bottom: 18px;
+      justify-content: center;
+    }
+    .history-area {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    #lichSuIn, #lichSuThu {
+      width: 100%;
+      min-height: 72px;
+      resize: vertical;
+    }
+    .history-btns {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 10px;
+      justify-content: flex-end;
+    }
+    #qr-reader {
+      width: 98vw !important;
+      max-width: 360px;
+      margin: 12px auto;
+      display: none;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px #ccc;
+      background: #fafafa;
+      overflow: hidden;
+    }
+    /* Ẩn nút khi in */
     @media print {
       body * { visibility: hidden; }
-      #invoice, #invoice * { visibility: visible; }
-      #invoice { position: absolute; left: 0; top: 0; width: 100%; }
+      #hoaDon, #hoaDon * { visibility: visible; }
+      #hoaDon { position: absolute; top: 0; left: 0; width: 100%; }
     }
   </style>
 </head>
-<body>
-
-<div class="row">
-  <div>
-    <label>Mã khách hàng</label><br>
-    <div style="display: flex; align-items: center; gap: 4px;">
-      <input list="danhSachKH" id="maKH" placeholder="(mục tìm kiếm)">
-      <button onclick="tuDongDien()" class="btn" style="padding: 5px 10px;">🔍</button>
-      <button onclick="batQuetQR()" class="btn" style="padding: 5px 10px;">📷</button>
-    </div>
+<body style="background: #f0f0f0;">
+<div class="container">
+  <h2>Thu tiền điện</h2>
+  <!-- ĐẨY DỮ LIỆU EXCEL -->
+  <div class="row" style="justify-content:center;">
+    <button onclick="document.getElementById('fileInput').click()" type="button">Đẩy dữ liệu</button>
+    <input accept=".xlsx" id="fileInput" onchange="docFileExcel(event)" style="display:none" type="file"/>
+  </div>
+  <div class="row">
+    <label class="label">Người thu tiền</label>
+    <input id="nguoiThuTien" placeholder="Nhập tên người thu"/>
+  </div>
+  <div class="row">
+    <label class="label">Mã khách hàng</label>
+    <input id="maKH" list="danhSachKH" onkeydown="if(event.key==='Enter'){timKiemMaKH()}" placeholder="(mục tìm kiếm)"/>
     <datalist id="danhSachKH"></datalist>
+    <button onclick="timKiemMaKH()" type="button">🔍</button>
+    <button onclick="batDauQuetQR()" type="button">📷</button>
   </div>
-  <div>
-    <label>Tìm theo tên KH</label><br>
-    <div style="display: flex; align-items: center; gap: 4px;">
-      <input type="text" id="timTenKH" placeholder="Nhập tên KH">
-      <button onclick="timKiemTheoTen()" class="btn" style="padding: 5px 10px;">🔍</button>
+  <div id="qr-reader"></div>
+  <div class="row">
+    <label class="label">Số tiền</label>
+    <input id="soTien" readonly=""/>
+  </div>
+  <div class="row">
+    <label class="label">Tên KH</label>
+    <input id="tenKH" readonly=""/>
+  </div>
+  <div id="hoaDon">[Hóa đơn sẽ hiển thị tại đây]</div>
+  <div class="action-btns">
+    <button onclick="inHoaDon()" type="button">In</button>
+    <button onclick="xacNhanThu()" style="border:2px solid black;" type="button">Xác nhận đã thu</button>
+  </div>
+  <div class="history-area">
+    <label>Lịch sử in</label>
+    <textarea id="lichSuIn" readonly=""></textarea>
+    <label><b>Lịch sử thu</b></label>
+    <textarea id="lichSuThu" readonly=""></textarea>
+    <div class="history-btns">
+      <button onclick="xuatLichSu('in')" type="button">Xuất lịch sử in</button>
+      <button onclick="xuatLichSu('thu')" type="button">Xuất lịch sử thu</button>
+      <button onclick="xuatLichSuExcel()" type="button">Xuất Excel</button>
+      <button onclick="xoaLichSu()" type="button">🗑️ Xóa lịch sử</button>
     </div>
   </div>
-  <div>
-    <label>Số tiền</label><br>
-    <input type="number" id="soTien">
-  </div>
-  <div>
-    <label>Tên KH</label><br>
-    <input type="text" id="diaChi">
-  </div>
 </div>
-
-<div class="invoice-box" id="invoice"></div>
-<button class="btn" onclick="inHoaDon()">In</button>
-
-<div class="bottom-row">
-  <div>
-    <button class="btn" onclick="document.getElementById('excelUpload').click()">Đẩy dữ liệu</button>
-    <input type="file" id="excelUpload" accept=".xlsx,.xls" style="display:none" onchange="docExcel(this)">
-  </div>
-  <div>
-    <label>Lịch sử in</label><br>
-    <textarea rows="5" cols="30" id="lichSu" readonly></textarea><br>
-    <button class="btn" onclick="xuatLichSu()">Xuất lịch sử</button>
-  </div>
-</div>
-
-<div id="qr-reader" style="width: 300px; margin-top: 10px; display: none;"></div>
-
 <script>
-  let duLieuKH = {};
+let duLieu = [];
+let lichSuIn = JSON.parse(localStorage.getItem("lichSuIn")) || [];
+let lichSuThu = JSON.parse(localStorage.getItem("lichSuThu")) || [];
 
-  function hienThiHoaDon() {
-    const maKH = document.getElementById('maKH').value;
-    const soTien = parseFloat(document.getElementById('soTien').value) || 0;
-    const diaChi = document.getElementById('diaChi').value;
-    const phi = 2000;
-    const tong = soTien + phi;
-    const ngay = new Date();
+function formatVND(number) {
+  return Number(number).toLocaleString('vi-VN') + ' ₫';
+}
 
-    const hoaDonHTML = `
-      <table>
-        <tr><td colspan="2" class="center">BIÊN NHẬN THANH TOÁN TIỀN ĐIỆN</td></tr>
-        <tr><td colspan="2">Điện Lực Kiến Xương</td></tr>
-        <tr><td>Mã KH:</td><td>${maKH}</td></tr>
-        <tr><td>Tên KH:</td><td>${diaChi}</td></tr>
-        <tr><td>Số tiền:</td><td>${soTien.toLocaleString()} ₫</td></tr>
-        <tr><td>Phí:</td><td>2.000 ₫</td></tr>
-        <tr><td>Tổng tiền:</td><td>${tong.toLocaleString()} ₫</td></tr>
-        <tr><td colspan="2" class="center">ĐÃ THANH TOÁN</td></tr>
-        <tr><td colspan="2" class="center">Ngày ${ngay.getDate()}/${ngay.getMonth()+1}/${ngay.getFullYear()}</td></tr>
-      </table>
-    `;
-    document.getElementById('invoice').innerHTML = hoaDonHTML;
+function timKiemMaKH() {
+  const maKH = document.getElementById("maKH").value.trim();
+  const kh = duLieu.find(row => row.MA_KHTT === maKH);
+  if (kh) {
+    document.getElementById("tenKH").value = kh.TEN_KHTT;
+    document.getElementById("soTien").value = kh.TONG_NOP;
+    hienThiHoaDon(kh.MA_KHTT, kh.TEN_KHTT, kh.TONG_NOP);
+  } else {
+    document.getElementById("hoaDon").innerText = "[Không tìm thấy khách hàng]";
   }
+}
 
-  function inHoaDon() {
-    hienThiHoaDon();
-    setTimeout(() => window.print(), 300);
-  }
+function hienThiHoaDon(maKH, tenKH, soTien) {
+  const nguoiThu = document.getElementById("nguoiThuTien").value || "-";
+  const phi = 2000;
+  const tong = Number(soTien) + phi;
+  const now = new Date();
+  const ngay = now.toLocaleDateString('vi-VN');
+  const gio = now.toTimeString().split(' ')[0];
+  const thoiGian = `Ngày ${ngay}, Giờ ${gio}`;
+  const noiDung = `
+    <div style="text-align:center; font-weight:bold;">BIÊN LAI NHẬN TIỀN CHUYỂN KHOẢN</div>
+    <p>Mã KH: ${maKH}</p>
+    <p>Tên KH: ${tenKH}</p>
+    <p>Số Tiền: ${formatVND(soTien)}</p>
+    <p>Phí: ${formatVND(phi)}</p>
+    <p>Tổng Tiền: ${formatVND(tong)}</p>
+    <p>Người thu tiền: ${nguoiThu}</p>
+    <div style="text-align:center; font-weight:bold;">ĐÃ NHẬN TIỀN</div>
+    <p>${thoiGian}</p>
+  `;
+  document.getElementById("hoaDon").innerHTML = noiDung;
+}
 
-  function docExcel(input) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(sheet);
-      duLieuKH = {};
-      const datalist = document.getElementById('danhSachKH');
-      datalist.innerHTML = '';
-      json.forEach(row => {
-        if (row['MA_KHTT']) {
-          duLieuKH[row['MA_KHTT']] = row;
-          const option = document.createElement('option');
-          option.value = row['MA_KHTT'];
-          datalist.appendChild(option);
-        }
-      });
-      alert('Tải dữ liệu thành công!');
-    };
-    reader.readAsArrayBuffer(input.files[0]);
-  }
+function inHoaDon() {
+  const maKH = document.getElementById("maKH").value;
+  const tenKH = document.getElementById("tenKH").value;
+  const soTien = Number(document.getElementById("soTien").value || 0);
+  hienThiHoaDon(maKH, tenKH, soTien);
+  lichSuIn.push({ maKH, tenKH, soTien: soTien + 2000, thoiGian: new Date().toLocaleDateString('vi-VN') });
+  localStorage.setItem("lichSuIn", JSON.stringify(lichSuIn));
+  capNhatLichSu();
+  setTimeout(() => { window.print(); }, 0);
+}
 
-  function tuDongDien() {
-    const ma = document.getElementById('maKH').value;
-    const thongTin = duLieuKH[ma];
-    if (thongTin) {
-      const tong = parseFloat((thongTin['TONG_NOP'] + '').replace(/[^\d,\.]/g, '').replace(',', '.')) || 0;
-      document.getElementById('soTien').value = tong;
-      document.getElementById('diaChi').value = thongTin['TEN_KHTT'] || '';
-      hienThiHoaDon();
-    }
-  }
+function xacNhanThu() {
+  const maKH = document.getElementById("maKH").value;
+  const tenKH = document.getElementById("tenKH").value;
+  const soTien = Number(document.getElementById("soTien").value || 0) + 2000;
+  const thoiGian = new Date().toLocaleString();
+  lichSuThu.push({ maKH, tenKH, soTien, thoiGian });
+  localStorage.setItem("lichSuThu", JSON.stringify(lichSuThu));
+  capNhatLichSu();
+}
 
-  function timKiemTheoTen() {
-    const tenInput = document.getElementById('timTenKH').value.toLowerCase();
-    const maKHInput = document.getElementById('maKH');
-    for (const ma in duLieuKH) {
-      const ten = (duLieuKH[ma]['TEN_KHTT'] || '').toLowerCase();
-      if (ten.includes(tenInput)) {
-        maKHInput.value = ma;
-        tuDongDien();
-        break;
-      }
-    }
-  }
+function capNhatLichSu() {
+  const inText = lichSuIn.map(item => `(${item.thoiGian}) ${item.maKH} - ${item.tenKH}: ${formatVND(item.soTien)}`).join("\n");
+  const thuText = lichSuThu.map(item => `(${item.thoiGian}) ${item.maKH} - ${item.tenKH}: ${formatVND(item.soTien)}`).join("\n");
+  document.getElementById("lichSuIn").value = inText;
+  document.getElementById("lichSuThu").value = thuText;
+}
 
-  function xuatLichSu() {
-    const lichSuText = document.getElementById('lichSu').value.trim();
-    if (!lichSuText) return alert('Chưa có lịch sử để xuất.');
-    const records = lichSuText.split('-----').filter(r => r.trim());
-    const data = records.map(rec => {
-      const obj = {};
-      rec.split('\n').forEach(line => {
-        const [key, ...rest] = line.split(':');
-        if (key && rest.length) {
-          obj[key.trim()] = rest.join(':').trim();
-        }
-      });
-      return obj;
+function xuatLichSu(loai) {
+  const duLieu = loai === 'in' ? lichSuIn : lichSuThu;
+  const text = duLieu.map(item => `(${item.thoiGian}) ${item.maKH} - ${item.tenKH}: ${item.soTien}`).join("\n");
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `lich_su_${loai}.txt`;
+  a.click();
+}
+
+function xuatLichSuExcel() {
+  const ws = XLSX.utils.json_to_sheet([...lichSuIn.map(e => ({ ...e, Loại: 'In' })), ...lichSuThu.map(e => ({ ...e, Loại: 'Thu' }))]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Lịch Sử");
+  XLSX.writeFile(wb, "lich_su.xlsx");
+}
+
+function docFileExcel(event) {
+  const file = event.target.files[0];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    duLieu = XLSX.utils.sheet_to_json(sheet);
+    const dataList = document.getElementById("danhSachKH");
+    dataList.innerHTML = "";
+    duLieu.forEach(row => {
+      const option = document.createElement("option");
+      option.value = row.MA_KHTT;
+      dataList.appendChild(option);
     });
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'LichSuIn');
-    XLSX.writeFile(wb, 'lich_su_in.xlsx');
-  }
+  };
+  reader.readAsArrayBuffer(file);
+}
 
-  function batQuetQR() {
-    const qrRegion = document.getElementById("qr-reader");
-    qrRegion.style.display = "block";
-    const qr = new Html5Qrcode("qr-reader");
-    qr.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      (decodedText) => {
-        document.getElementById("maKH").value = decodedText;
-        tuDongDien();
-        qr.stop();
-        qr.clear();
-        qrRegion.style.display = "none";
-      },
-      (errorMessage) => {
-        console.warn(errorMessage);
-      }
-    ).catch((err) => {
-      alert("Không thể bật camera: " + err);
-    });
+function xoaLichSu() {
+  if (confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử không?")) {
+    localStorage.removeItem("lichSuIn");
+    localStorage.removeItem("lichSuThu");
+    lichSuIn = [];
+    lichSuThu = [];
+    capNhatLichSu();
   }
+}
+
+// QR CODE FUNCTIONS
+let html5QrCode; // Biến toàn cục để quản lý camera
+
+function batDauQuetQR() {
+  const qrRegion = document.getElementById('qr-reader');
+  qrRegion.style.display = 'block';
+  if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    qrCodeMessage => {
+      document.getElementById('maKH').value = qrCodeMessage;
+      qrRegion.style.display = 'none';
+      html5QrCode.stop();
+      timKiemMaKH();
+    },
+    errorMessage => { /* không làm gì khi lỗi */ }
+  ).catch(err => {
+    alert("Không mở được camera hoặc thiết bị không hỗ trợ!");
+    qrRegion.style.display = 'none';
+  });
+}
+
+window.onload = capNhatLichSu;
 </script>
 </body>
 </html>
