@@ -332,3 +332,16 @@ window.onload = capNhatLichSu;
 </script>
 </body>
 </html>
+// ----- Ở trước khi gọi window.print() -----
+function removeVietnameseTones(str) {
+  return str.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')      // remove diacritics
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+}
+function inHoaDon() {
+  ... // giữ code cũ
+  // Trước khi print, chuyển nội dung sang không dấu
+  const bill = document.getElementById('hoaDon');
+  bill.innerText = removeVietnameseTones(bill.innerText);
+  setTimeout(()=>window.print(),0);
+}
