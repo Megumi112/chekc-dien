@@ -4,7 +4,9 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Thu tiền điện</title>
+  <!-- SheetJS để đọc file Excel -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Thư viện quét QR -->
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
@@ -132,8 +134,16 @@
   <h2>Thu tiền điện</h2>
   <!-- ĐẨY DỮ LIỆU EXCEL -->
   <div class="row" style="justify-content:center;">
-    <button onclick="document.getElementById('fileInput').click()" type="button">Đẩy dữ liệu</button>
-    <input accept=".xlsx" id="fileInput" onchange="docFileExcel(event)" style="display:none" type="file"/>
+    <button type="button" onclick="document.getElementById('fileInput').click()">Đẩy dữ liệu</button>
+    <!--
+      Thêm MIME types để đảm bảo Android cho phép chọn file Excel,
+      tránh trường hợp chỉ hiện camera/hình ảnh.
+    -->
+    <input type="file"
+           id="fileInput"
+           style="display:none"
+           accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+           onchange="docFileExcel(event)"/>
   </div>
   <div class="row">
     <label class="label">Người thu tiền</label>
@@ -141,35 +151,35 @@
   </div>
   <div class="row">
     <label class="label">Mã khách hàng</label>
-    <input id="maKH" list="danhSachKH" onkeydown="if(event.key==='Enter'){timKiemMaKH()}" placeholder="(mục tìm kiếm)"/>
+    <input id="maKH" list="danhSachKH" placeholder="(mục tìm kiếm)" onkeydown="if(event.key==='Enter'){timKiemMaKH()}">
     <datalist id="danhSachKH"></datalist>
-    <button onclick="timKiemMaKH()" type="button">🔍</button>
-    <button onclick="batDauQuetQR()" type="button">📷</button>
+    <button type="button" onclick="timKiemMaKH()">🔍</button>
+    <button type="button" onclick="batDauQuetQR()">📷</button>
   </div>
   <div id="qr-reader"></div>
   <div class="row">
     <label class="label">Số tiền</label>
-    <input id="soTien" readonly=""/>
+    <input id="soTien" readonly />
   </div>
   <div class="row">
     <label class="label">Tên KH</label>
-    <input id="tenKH" readonly=""/>
+    <input id="tenKH" readonly />
   </div>
   <div id="hoaDon">[Hóa đơn sẽ hiển thị tại đây]</div>
   <div class="action-btns">
-    <button onclick="inHoaDon()" type="button">In</button>
-    <button onclick="xacNhanThu()" style="border:2px solid black;" type="button">Xác nhận đã thu</button>
+    <button type="button" onclick="inHoaDon()">In</button>
+    <button type="button" style="border:2px solid black;" onclick="xacNhanThu()">Xác nhận đã thu</button>
   </div>
   <div class="history-area">
     <label>Lịch sử in</label>
-    <textarea id="lichSuIn" readonly=""></textarea>
+    <textarea id="lichSuIn" readonly></textarea>
     <label><b>Lịch sử thu</b></label>
-    <textarea id="lichSuThu" readonly=""></textarea>
+    <textarea id="lichSuThu" readonly></textarea>
     <div class="history-btns">
-      <button onclick="xuatLichSu('in')" type="button">Xuất lịch sử in</button>
-      <button onclick="xuatLichSu('thu')" type="button">Xuất lịch sử thu</button>
-      <button onclick="xuatLichSuExcel()" type="button">Xuất Excel</button>
-      <button onclick="xoaLichSu()" type="button">🗑️ Xóa lịch sử</button>
+      <button type="button" onclick="xuatLichSu('in')">Xuất lịch sử in</button>
+      <button type="button" onclick="xuatLichSu('thu')">Xuất lịch sử thu</button>
+      <button type="button" onclick="xuatLichSuExcel()">Xuất Excel</button>
+      <button type="button" onclick="xoaLichSu()">🗑️ Xóa lịch sử</button>
     </div>
   </div>
 </div>
@@ -255,7 +265,10 @@ function xuatLichSu(loai) {
 }
 
 function xuatLichSuExcel() {
-  const ws = XLSX.utils.json_to_sheet([...lichSuIn.map(e => ({ ...e, Loại: 'In' })), ...lichSuThu.map(e => ({ ...e, Loại: 'Thu' }))]);
+  const ws = XLSX.utils.json_to_sheet([
+    ...lichSuIn.map(e => ({ ...e, Loại: 'In' })),
+    ...lichSuThu.map(e => ({ ...e, Loại: 'Thu' }))
+  ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Lịch Sử");
   XLSX.writeFile(wb, "lich_su.xlsx");
@@ -263,6 +276,7 @@ function xuatLichSuExcel() {
 
 function docFileExcel(event) {
   const file = event.target.files[0];
+  if (!file) return;
   const reader = new FileReader();
   reader.onload = (e) => {
     const data = new Uint8Array(e.target.result);
