@@ -135,10 +135,6 @@
   <!-- ĐẨY DỮ LIỆU EXCEL -->
   <div class="row" style="justify-content:center;">
     <button type="button" onclick="document.getElementById('fileInput').click()">Đẩy dữ liệu</button>
-    <!--
-      Thêm MIME types để đảm bảo Android cho phép chọn file Excel,
-      tránh trường hợp chỉ hiện camera/hình ảnh.
-    -->
     <input type="file"
            id="fileInput"
            style="display:none"
@@ -213,17 +209,23 @@ function hienThiHoaDon(maKH, tenKH, soTien) {
   const gio = now.toTimeString().split(' ')[0];
   const thoiGian = `Ngày ${ngay}, Giờ ${gio}`;
   const noiDung = `
-    <div style="text-align:center; font-weight:bold;">BIÊN LAI NHẬN TIỀN CHUYỂN KHOẢN</div>
-    <p>Mã KH: ${maKH}</p>
-    <p>Tên KH: ${tenKH}</p>
-    <p>Số Tiền: ${formatVND(soTien)}</p>
-    <p>Phí: ${formatVND(phi)}</p>
-    <p>Tổng Tiền: ${formatVND(tong)}</p>
-    <p>Người thu tiền: ${nguoiThu}</p>
-    <div style="text-align:center; font-weight:bold;">ĐÃ NHẬN TIỀN</div>
-    <p>${thoiGian}</p>
-  `;
-  document.getElementById("hoaDon").innerHTML = noiDung;
+    BIEN LAI NHAN TIEN CHUYEN KHOAN\n\n`+
+    `Ma KH: ${maKH}\n`+
+    `Ten KH: ${tenKH}\n`+
+    `So Tien: ${formatVND(soTien)}\n`+
+    `Phi: ${formatVND(phi)}\n`+
+    `Tong Tien: ${formatVND(tong)}\n`+
+    `Nguoi thu tien: ${nguoiThu}\n\n`+
+    `DA NHAN TIEN\n`+
+    `${thoiGian}`;
+  document.getElementById("hoaDon").innerText = noiDung;
+}
+
+// ----- HÀM XOÁ DẤU TIẾNG VIỆT (cách in nhanh) -----
+function removeVietnameseTones(str) {
+  return str.normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')      // remove combining marks (unicode 15+)
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
 }
 
 function inHoaDon() {
@@ -231,10 +233,22 @@ function inHoaDon() {
   const tenKH = document.getElementById("tenKH").value;
   const soTien = Number(document.getElementById("soTien").value || 0);
   hienThiHoaDon(maKH, tenKH, soTien);
+
+  // ➜ Lưu lịch sử (không xoá dấu để hiển thị đúng trong textarea)
   lichSuIn.push({ maKH, tenKH, soTien: soTien + 2000, thoiGian: new Date().toLocaleDateString('vi-VN') });
   localStorage.setItem("lichSuIn", JSON.stringify(lichSuIn));
   capNhatLichSu();
-  setTimeout(() => { window.print(); }, 0);
+
+  // ➜ Bỏ dấu chỉ cho bản in
+  const billEl = document.getElementById('hoaDon');
+  const originalText = billEl.innerText;
+  billEl.innerText = removeVietnameseTones(originalText);
+
+  // In và khôi phục lại nội dung có dấu sau khi gửi lệnh print
+  setTimeout(() => {
+    window.print();
+    billEl.innerText = originalText; // khôi phục
+  }, 0);
 }
 
 function xacNhanThu() {
@@ -306,42 +320,4 @@ function xoaLichSu() {
 }
 
 // QR CODE FUNCTIONS
-let html5QrCode; // Biến toàn cục để quản lý camera
-
-function batDauQuetQR() {
-  const qrRegion = document.getElementById('qr-reader');
-  qrRegion.style.display = 'block';
-  if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader");
-  html5QrCode.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: 250 },
-    qrCodeMessage => {
-      document.getElementById('maKH').value = qrCodeMessage;
-      qrRegion.style.display = 'none';
-      html5QrCode.stop();
-      timKiemMaKH();
-    },
-    errorMessage => { /* không làm gì khi lỗi */ }
-  ).catch(err => {
-    alert("Không mở được camera hoặc thiết bị không hỗ trợ!");
-    qrRegion.style.display = 'none';
-  });
-}
-
-window.onload = capNhatLichSu;
-</script>
-</body>
-</html>
-// ----- Ở trước khi gọi window.print() -----
-function removeVietnameseTones(str) {
-  return str.normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')      // remove diacritics
-    .replace(/đ/g, 'd').replace(/Đ/g, 'D');
-}
-function inHoaDon() {
-  ... // giữ code cũ
-  // Trước khi print, chuyển nội dung sang không dấu
-  const bill = document.getElementById('hoaDon');
-  bill.innerText = removeVietnameseTones(bill.innerText);
-  setTimeout(()=>window.print(),0);
-}
+let html5Qr
