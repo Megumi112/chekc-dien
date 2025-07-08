@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -7,8 +6,9 @@
   <title>Thu tiền điện</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    body{font-family:Arial, sans-serif;margin:0;background:#f0f0f0;max-width:100vw;min-height:100vh;font-size:17px}
+    body{font-family:Arial,sans-serif;margin:0;background:#f0f0f0;max-width:100vw;min-height:100vh;font-size:17px}
     .container{max-width:430px;margin:auto;background:#fff;border-radius:18px;box-shadow:0 4px 16px #bbb8;padding:18px 6px 24px;min-height:100vh}
     input,button,textarea{font-size:17px;margin:7px 0;padding:10px 8px;border-radius:10px;border:1px solid #ddd}
     input:focus,textarea:focus{border:1.5px solid #4387fd;outline:none}
@@ -32,7 +32,7 @@
 <h2>Thu tiền điện</h2>
 <div class="row" style="justify-content:center;">
   <button onclick="document.getElementById('fileInput').click()">Đẩy dữ liệu</button>
-  <input type="file" id="fileInput" style="display:none" accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onchange="docFileExcel(event)">
+  <input type="file" id="fileInput" style="display:none" accept=".xls,.xlsx" onchange="docFileExcel(event)">
 </div>
 <div class="row">
   <label class="label">Người thu tiền</label>
@@ -54,7 +54,10 @@
   <label class="label">Tên KH</label>
   <input id="tenKH" readonly>
 </div>
-<div id="hoaDon">[Hóa đơn sẽ hiển thị tại đây]</div>
+<div id="hoaDon">
+  <div id="hoaDonText">[Hóa đơn sẽ hiển thị tại đây]</div>
+  <div id="qrCodeArea" style="margin-top:12px;text-align:center;"></div>
+</div>
 <div class="action-btns">
   <button onclick="inHoaDon()">In</button>
   <button style="border:2px solid #000" onclick="xacNhanThu()">Xác nhận đã thu</button>
@@ -92,7 +95,7 @@ function docFileExcel(e){
 function timKiemMaKH(){
   const ma=document.getElementById('maKH').value.trim();
   const kh=duLieu.find(r=>r.MA_KHTT===ma);
-  if(!kh){document.getElementById('hoaDon').innerText='[Không tìm thấy khách hàng]';return;}
+  if(!kh){document.getElementById('hoaDonText').innerText='[Không tìm thấy khách hàng]';return;}
   document.getElementById('tenKH').value=kh.TEN_KHTT;
   document.getElementById('soTien').value=kh.TONG_NOP;
   hienThiHoaDon(kh.MA_KHTT,kh.TEN_KHTT,kh.TONG_NOP);
@@ -102,17 +105,34 @@ function hienThiHoaDon(ma,ten,so){
   const tong=Number(so)+phiCoDinh;
   const now=new Date();const t=`Ngày ${now.toLocaleDateString('vi-VN')}, Giờ ${now.toTimeString().slice(0,8)}`;
   const txt=`BIEN LAI NHAN TIEN CHUYEN KHOAN\n\nMa KH: ${ma}\nTen KH: ${ten}\nSo tien: ${formatVND(so)}\nPhi: ${formatVND(phiCoDinh)}\nTong tien: ${formatVND(tong)}\nNguoi thu tien: ${nguoi}\n\nDA NHAN TIEN\n${t}`;
-  document.getElementById('hoaDon').innerText=txt;
+  document.getElementById('hoaDonText').innerText = txt;
+  const qrArea = document.getElementById('qrCodeArea');
+  qrArea.innerHTML = '';
+  new QRCode(qrArea, {
+    text: ma,
+    width: 128,
+    height: 128,
+    correctLevel: QRCode.CorrectLevel.H
+  });
 }
 function capNhatLichSu(){
-  document.getElementById('lichSuIn').value=lichSuIn.map(i=>`(${i.thoiGian}) ${i.maKH}-${i.tenKH}: ${formatVND(i.soTien)}`).join('\n');
-  document.getElementById('lichSuThu').value=lichSuThu.map(i=>`(${i.thoiGian}) ${i.maKH}-${i.tenKH}: ${formatVND(i.soTien)}`).join('\n');
+  document.getElementById('lichSuIn').value=lichSuIn.map(i=>`(${i.thoiGian}) ${i.maKH}-${i.tenKH}: ${formatVND(i.soTien)}`).join('\\n');
+  document.getElementById('lichSuThu').value=lichSuThu.map(i=>`(${i.thoiGian}) ${i.maKH}-${i.tenKH}: ${formatVND(i.soTien)}`).join('\\n');
 }
 function inHoaDon(){
-  const ma=document.getElementById('maKH').value,ten=document.getElementById('tenKH').value,so=Number(document.getElementById('soTien').value||0)+phiCoDinh;
+  const ma=document.getElementById('maKH').value,
+        ten=document.getElementById('tenKH').value,
+        so=Number(document.getElementById('soTien').value||0)+phiCoDinh;
   lichSuIn.push({maKH:ma,tenKH:ten,soTien:so,thoiGian:new Date().toLocaleString()});
   localStorage.setItem('lichSuIn',JSON.stringify(lichSuIn));capNhatLichSu();
-  const el=document.getElementById('hoaDon');const ori=el.innerText;el.innerText=removeVietnameseTones(ori);setTimeout(()=>{window.print();el.innerText=ori;},0);
+  const hoaDonText = document.getElementById('hoaDonText');
+  const qrArea = document.getElementById('qrCodeArea');
+  const oriText = hoaDonText.innerText;
+  hoaDonText.innerText = removeVietnameseTones(oriText);
+  setTimeout(() => {
+    window.print();
+    hoaDonText.innerText = oriText;
+  }, 0);
 }
 function xacNhanThu(){
   const ma=document.getElementById('maKH').value,ten=document.getElementById('tenKH').value,so=Number(document.getElementById('soTien').value||0)+phiCoDinh;
@@ -121,7 +141,7 @@ function xacNhanThu(){
 }
 function xuatLichSu(loai){
   const arr=loai==='in'?lichSuIn:lichSuThu;
-  const txt=arr.map(i=>`(${i.thoiGian}) ${i.maKH}-${i.tenKH}: ${i.soTien}`).join('\n');
+  const txt=arr.map(i=>`(${i.thoiGian}) ${i.maKH}-${i.tenKH}: ${i.soTien}`).join('\\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));a.download=`lich_su_${loai}.txt`;a.click();
 }
 function xuatLichSuExcel(){
