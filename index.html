@@ -99,6 +99,21 @@ function tinhTienDien(sanLuong) {
   return tongTien;
 }
 
+function uocTinhSanLuong(tongTien) {
+  let sanLuong = 0;
+  for (const bac of bacThangGia) {
+    const tienBac = bac.sanLuong * bac.donGia;
+    if (tongTien >= tienBac) {
+      sanLuong += bac.sanLuong;
+      tongTien -= tienBac;
+    } else {
+      sanLuong += Math.floor(tongTien / bac.donGia);
+      break;
+    }
+  }
+  return sanLuong;
+}
+
 function formatVND(n){return Number(n).toLocaleString('vi-VN')+' ₫';}
 function removeVietnameseTones(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');}
 
@@ -130,19 +145,18 @@ function timKiemMaKH(){
   hienThiHoaDon(ma, kh.TEN_KHTT, kh.TONG_NOP);
 }
 
-function hienThiHoaDon(ma,ten,so){
+function hienThiHoaDon(ma, ten, so){
   const nguoi = document.getElementById('nguoiThuTien').value || '-';
   const tong = Number(so) + phiCoDinh;
   const now = new Date();
   const t = `Ngay ${now.toLocaleDateString('vi-VN')}, Gio ${now.toTimeString().slice(0,8)}`;
-  const kh = duLieu.find(r => r.MA_KHTT === ma);
-  const sanLuong = kh && kh.SAN_LUONG ? `${kh.SAN_LUONG} kWh` : 'Khong ro';
+  const sanLuongUocTinh = uocTinhSanLuong(Number(so));
 
   const txt = `BIEN LAI NHAN TIEN CHUYEN KHOAN
 
 Ma KH: ${ma}
 Ten KH: ${ten}
-San luong uoc tinh: ${sanLuong}
+San luong uoc tinh: ${sanLuongUocTinh} kWh
 So tien: ${formatVND(so)}
 Phi: ${formatVND(phiCoDinh)}
 Tong tien: ${formatVND(tong)}
