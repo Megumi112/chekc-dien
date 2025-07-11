@@ -131,11 +131,28 @@ function timKiemMaKH(){
 }
 
 function hienThiHoaDon(ma,ten,so){
-  const nguoi=document.getElementById('nguoiThuTien').value||'-';
-  const tong=Number(so)+phiCoDinh;
-  const now=new Date();const t=`Ngay ${now.toLocaleDateString('vi-VN')}, Gio ${now.toTimeString().slice(0,8)}`;
-  const txt=`BIEN LAI NHAN TIEN CHUYEN KHOAN\n\nMa KH: ${ma}\nTen KH: ${ten}\nSo tien: ${formatVND(so)}\nPhi: ${formatVND(phiCoDinh)}\nTong tien: ${formatVND(tong)}\nNguoi thu tien: ${nguoi}\n\nDA NHAN TIEN\n${t}`;
+  const nguoi = document.getElementById('nguoiThuTien').value || '-';
+  const tong = Number(so) + phiCoDinh;
+  const now = new Date();
+  const t = `Ngay ${now.toLocaleDateString('vi-VN')}, Gio ${now.toTimeString().slice(0,8)}`;
+  const kh = duLieu.find(r => r.MA_KHTT === ma);
+  const sanLuong = kh && kh.SAN_LUONG ? `${kh.SAN_LUONG} kWh` : 'Khong ro';
+
+  const txt = `BIEN LAI NHAN TIEN CHUYEN KHOAN
+
+Ma KH: ${ma}
+Ten KH: ${ten}
+San luong uoc tinh: ${sanLuong}
+So tien: ${formatVND(so)}
+Phi: ${formatVND(phiCoDinh)}
+Tong tien: ${formatVND(tong)}
+Nguoi thu tien: ${nguoi}
+
+DA NHAN TIEN
+${t}`;
+
   document.getElementById('hoaDonText').innerText = removeVietnameseTones(txt);
+
   const qrArea = document.getElementById('qrCodeArea');
   qrArea.innerHTML = '';
   new QRCode(qrArea, {
@@ -158,7 +175,6 @@ function inHoaDon(){
   lichSuIn.push({maKH:ma,tenKH:ten,soTien:so,thoiGian:new Date().toLocaleString()});
   localStorage.setItem('lichSuIn',JSON.stringify(lichSuIn));capNhatLichSu();
   const hoaDonText = document.getElementById('hoaDonText');
-  const qrArea = document.getElementById('qrCodeArea');
   const oriText = hoaDonText.innerText;
   hoaDonText.innerText = removeVietnameseTones(oriText);
   setTimeout(() => {
